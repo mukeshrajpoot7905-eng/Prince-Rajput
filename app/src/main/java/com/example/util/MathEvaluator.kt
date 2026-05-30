@@ -19,7 +19,6 @@ class MathEvaluator(private val isDegreeMode: Boolean = true) {
             .replace("sin⁻¹", "asin")
             .replace("cos⁻¹", "acos")
             .replace("tan⁻¹", "atan")
-            .replace("mod", "%")
             .replace("√", "sqrt")
             .replace("∛", "cbrt")
     }
@@ -40,6 +39,32 @@ class MathEvaluator(private val isDegreeMode: Boolean = true) {
                 return true
             }
             return false
+        }
+
+        private fun eatMod(): Boolean {
+            var tempPos = pos
+            while (tempPos < str.length && str[tempPos] == ' ') {
+                tempPos++
+            }
+            if (tempPos + 2 < str.length &&
+                str[tempPos] == 'm' &&
+                str[tempPos + 1] == 'o' &&
+                str[tempPos + 2] == 'd') {
+                pos = tempPos + 2
+                nextChar()
+                return true
+            }
+            return false
+        }
+
+        private fun isBinaryPercent(): Boolean {
+            var i = pos
+            while (i < str.length && str[i] == ' ') {
+                i++
+            }
+            if (i >= str.length) return false
+            val next = str[i]
+            return next in '0'..'9' || next == '.' || next == '(' || next == '√' || next == '∛' || (next in 'a'..'z')
         }
 
         fun parse(): Double {
@@ -69,10 +94,17 @@ class MathEvaluator(private val isDegreeMode: Boolean = true) {
                     val divisor = parseFactor()
                     if (divisor == 0.0) throw ArithmeticException("Division by zero")
                     x /= divisor
-                } else if (eat('%')) {
+                } else if (eatMod()) {
                     val divisor = parseFactor()
                     if (divisor == 0.0) throw ArithmeticException("Modulo by zero")
                     x %= divisor
+                } else if (eat('%')) {
+                    if (isBinaryPercent()) {
+                        val divisor = parseFactor()
+                        x = (x * divisor) / 100.0
+                    } else {
+                        x /= 100.0
+                    }
                 } else break
             }
             return x
