@@ -1,0 +1,6 @@
+{
+  "name": "All-in-One Calculator",
+  "description": "Scientific Calculator, Live Currency Exchange Rate, and versatile Unit Converter with advanced tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
