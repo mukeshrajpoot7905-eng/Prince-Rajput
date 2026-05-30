@@ -241,6 +241,9 @@ fun ScientificCalculatorView(
 
 
             // --- Mathematical LED Screen ---
+            val isSimpleNumber = expr.all { it.isDigit() || it == '.' || it == '-' } && expr.count { it == '-' } <= 1 && expr.count { it == '.' } <= 1
+            val showPreviewLive = preview.isNotEmpty() && !isSimpleNumber && preview != expr && expr.isNotBlank()
+
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -279,12 +282,12 @@ fun ScientificCalculatorView(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (preview.isNotEmpty()) {
+                        if (showPreviewLive) {
                             Text(
-                                text = "≈ $preview",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Normal,
+                                text = "= $preview",
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.End,
                                 modifier = Modifier
                                     .padding(end = 8.dp)
@@ -298,7 +301,7 @@ fun ScientificCalculatorView(
                                 Icon(
                                     imageVector = Icons.Outlined.ContentCopy,
                                     contentDescription = "Copy result",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -425,9 +428,10 @@ fun ScientificCalculatorView(
                                         modifier = Modifier.weight(1f),
                                         backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
                                         textColor = MaterialTheme.colorScheme.secondary,
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         soundEnabled = soundOn,
                                         vibrationEnabled = vibeOn,
+                                        aspectRatio = 1.9f,
                                         onClick = {
                                             if (key == "()") {
                                                 viewModel.onParenthesisPress()
@@ -478,15 +482,23 @@ fun ScientificCalculatorView(
                                 else -> MaterialTheme.colorScheme.onBackground
                             }
 
+                            val currentAspectRatio = if (scientificExpanded) 1.9f else 1.3f
+                            val currentFontSize = if (scientificExpanded) {
+                                if (isOperator || isAction) 16.sp else 18.sp
+                            } else {
+                                if (isOperator || isAction) 20.sp else 22.sp
+                            }
+
                             CalculatorButton(
                                 text = if (key == "AC" && expr.isNotEmpty()) "C" else key,
                                 modifier = Modifier.weight(1f),
                                 backgroundColor = backgroundColor,
                                 backgroundBrush = backgroundBrush,
                                 textColor = textColor,
-                                fontSize = if (isOperator || isAction) 20.sp else 22.sp,
+                                fontSize = currentFontSize,
                                 soundEnabled = soundOn,
                                 vibrationEnabled = vibeOn,
+                                aspectRatio = currentAspectRatio,
                                 onClick = {
                                     when (key) {
                                         "AC" -> viewModel.onClear()
@@ -648,12 +660,13 @@ fun CalculatorButton(
     fontSize: androidx.compose.ui.unit.TextUnit = 20.sp,
     soundEnabled: Boolean = false,
     vibrationEnabled: Boolean = false,
+    aspectRatio: Float = 1.2f,
     onClick: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     Box(
         modifier = modifier
-            .aspectRatio(1.2f) // beautiful rectangular grid shape
+            .aspectRatio(aspectRatio) // beautiful rectangular grid shape
             .clip(RoundedCornerShape(16.dp))
             .then(
                 if (backgroundBrush != null) {

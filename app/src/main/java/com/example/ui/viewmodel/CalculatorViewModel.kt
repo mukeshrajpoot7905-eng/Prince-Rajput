@@ -243,13 +243,63 @@ class CalculatorViewModel(private val repository: CalculatorRepository) : ViewMo
             _resultPreview.value = ""
             return
         }
+
+        var exprToEval = current.trim()
+
+        // Repeatedly strip trailing operators or incomplete functions at the end
+        var clean = false
+        while (!clean) {
+            val lengthBefore = exprToEval.length
+
+            // 1. Strip trailing operators & standard symbols
+            while (exprToEval.isNotEmpty() && (
+                exprToEval.endsWith("+") ||
+                exprToEval.endsWith("-") ||
+                exprToEval.endsWith("×") ||
+                exprToEval.endsWith("÷") ||
+                exprToEval.endsWith("^") ||
+                exprToEval.endsWith("(") ||
+                exprToEval.endsWith(",") ||
+                exprToEval.endsWith(".") ||
+                exprToEval.endsWith("mod") ||
+                exprToEval.endsWith("mo") ||
+                exprToEval.endsWith("m")
+            )) {
+                if (exprToEval.endsWith("mod")) {
+                    exprToEval = exprToEval.substring(0, exprToEval.length - 3).trim()
+                } else if (exprToEval.endsWith("mo")) {
+                    exprToEval = exprToEval.substring(0, exprToEval.length - 2).trim()
+                } else {
+                    exprToEval = exprToEval.substring(0, exprToEval.length - 1).trim()
+                }
+            }
+
+            // 2. Strip trailing function names that don't have arguments yet
+            val trailingFuncs = listOf("sin⁻¹", "cos⁻¹", "tan⁻¹", "sinh", "cosh", "tanh", "sin", "cos", "tan", "log", "ln", "√", "∛")
+            for (f in trailingFuncs) {
+                if (exprToEval.endsWith(f)) {
+                    exprToEval = exprToEval.substring(0, exprToEval.length - f.length).trim()
+                    break
+                }
+            }
+
+            if (exprToEval.length == lengthBefore) {
+                clean = true
+            }
+        }
+
+        if (exprToEval.isBlank()) {
+            _resultPreview.value = ""
+            return
+        }
+
         // Balance open parentheses temporarily for preview
-        var exprToEval = current
         val openCount = exprToEval.count { it == '(' }
         val closeCount = exprToEval.count { it == ')' }
         if (openCount > closeCount) {
             exprToEval += ")".repeat(openCount - closeCount)
         }
+
         try {
             val res = MathEvaluator(_isDegreeMode.value).evaluate(exprToEval)
             if (res.isNaN() || res.isInfinite()) {
