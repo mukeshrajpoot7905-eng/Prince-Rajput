@@ -241,7 +241,10 @@ fun ScientificCalculatorView(
 
 
             // --- Mathematical LED Screen ---
-            val isSimpleNumber = expr.all { it.isDigit() || it == '.' || it == '-' } && expr.count { it == '-' } <= 1 && expr.count { it == '.' } <= 1
+            val isSimpleNumberStr = expr.trim()
+            val isSimpleNumber = isSimpleNumberStr.toDoubleOrNull() != null ||
+                    (isSimpleNumberStr.all { it.isDigit() || it == '.' } && isSimpleNumberStr.count { it == '.' } <= 1) ||
+                    (isSimpleNumberStr.startsWith("-") && isSimpleNumberStr.drop(1).all { it.isDigit() || it == '.' } && isSimpleNumberStr.count { it == '.' } <= 1)
             val showPreviewLive = preview.isNotEmpty() && !isSimpleNumber && preview != expr && expr.isNotBlank()
 
             Box(
