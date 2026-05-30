@@ -76,7 +76,7 @@ fun ScientificCalculatorView(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
             // --- Sponsored Banner Ad (AdMob Native Banner) at the top ---
             if (loadAdsLazy) {
@@ -250,8 +250,9 @@ fun ScientificCalculatorView(
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .heightIn(min = 90.dp)
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp)
+                    .padding(vertical = 4.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -262,7 +263,7 @@ fun ScientificCalculatorView(
                     Text(
                         text = expr.ifEmpty { "0" },
                         style = MaterialTheme.typography.headlineLarge.copy(
-                            fontSize = if (expr.length > 15) 28.sp else 38.sp,
+                            fontSize = if (expr.length > 15) 22.sp else 32.sp,
                             fontWeight = FontWeight.Light,
                             fontFamily = FontFamily.Default,
                             textAlign = TextAlign.End
@@ -277,11 +278,11 @@ fun ScientificCalculatorView(
                             }
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     // Result Preview Text Flow
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -289,25 +290,25 @@ fun ScientificCalculatorView(
                             Text(
                                 text = "= $preview",
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                                fontSize = 26.sp,
+                                fontSize = 22.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.End,
                                 modifier = Modifier
-                                    .padding(end = 8.dp)
+                                    .padding(end = 6.dp)
                                     .clickable {
                                         clipboardManager.setText(AnnotatedString(preview))
                                     }
                             )
-                            IconButton(onClick = {
-                                clipboardManager.setText(AnnotatedString(preview))
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.ContentCopy,
-                                    contentDescription = "Copy result",
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Outlined.ContentCopy,
+                                contentDescription = "Copy result",
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .clickable {
+                                        clipboardManager.setText(AnnotatedString(preview))
+                                    }
+                            )
                         }
                     }
                 }
@@ -316,7 +317,7 @@ fun ScientificCalculatorView(
             // --- Main Custom Keypad Grid Panel ---
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 // Interactive Expand toggles for advanced scientific parameters
                 Row(
@@ -367,7 +368,7 @@ fun ScientificCalculatorView(
                 // Memory operations row MC MR M+ M-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     val mButtons = listOf("MC", "MR", "M+", "M-")
                     mButtons.forEach { mKey ->
@@ -412,7 +413,7 @@ fun ScientificCalculatorView(
                     enter = expandVertically(animationSpec = tween(250)) + fadeIn(),
                     exit = shrinkVertically(animationSpec = tween(200)) + fadeOut()
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         val sciRows = listOf(
                             listOf("sin", "cos", "tan", "sin⁻¹"),
                             listOf("cos⁻¹", "tan⁻¹", "sinh", "cosh"),
@@ -423,7 +424,7 @@ fun ScientificCalculatorView(
                         sciRows.forEach { row ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 row.forEach { key ->
                                     CalculatorButton(
@@ -434,7 +435,7 @@ fun ScientificCalculatorView(
                                         fontSize = 12.sp,
                                         soundEnabled = soundOn,
                                         vibrationEnabled = vibeOn,
-                                        aspectRatio = 1.9f,
+                                        aspectRatio = 2.2f,
                                         onClick = {
                                             if (key == "()") {
                                                 viewModel.onParenthesisPress()
@@ -461,7 +462,7 @@ fun ScientificCalculatorView(
                 keypadRows.forEach { row ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         row.forEach { key ->
                             val isOperator = key == "÷" || key == "×" || key == "-" || key == "+" || key == "="
@@ -485,7 +486,7 @@ fun ScientificCalculatorView(
                                 else -> MaterialTheme.colorScheme.onBackground
                             }
 
-                            val currentAspectRatio = if (scientificExpanded) 1.9f else 1.3f
+                            val currentAspectRatio = if (scientificExpanded) 2.2f else 1.45f
                             val currentFontSize = if (scientificExpanded) {
                                 if (isOperator || isAction) 16.sp else 18.sp
                             } else {
