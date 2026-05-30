@@ -80,29 +80,23 @@ fun AdsterraAdView(modifier: Modifier = Modifier) {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val url = request.url.toString()
                         
-                        // Let internal calls to highperformanceformat, script loaders, syndications, and doubleclick load in iframe
-                        if (url.startsWith("http://") || url.startsWith("https://")) {
-                            if (url.contains("highperformanceformat.com") || 
-                                url.contains("syndication") || 
-                                url.contains("f1d7b19f7fd823e38f2940b3201e7252") ||
-                                url.contains("native") ||
-                                url.contains("delivery")
-                            ) {
-                                return false
-                            } else {
-                                // For external user-click navigations, redirect safely to appropriate external browser
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                                return true
+                        // ONLY intercept if the navigation is on the main frame (meaning the user clicked the ad/banner)
+                        if (request.isForMainFrame) {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
+                            return true // Override and handle it by opening browser
                         }
+                        
+                        // Otherwise (sub-frames, scripts, ad content loading), let WebView load natively
                         return false
                     }
                 }
+                
+                webChromeClient = android.webkit.WebChromeClient()
                 
                 // Content loading
                 loadDataWithBaseURL("https://www.highperformanceformat.com/", rawHtml, "text/html", "UTF-8", null)

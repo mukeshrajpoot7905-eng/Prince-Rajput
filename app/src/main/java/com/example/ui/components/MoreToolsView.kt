@@ -33,6 +33,10 @@ import com.example.ui.theme.DarkPrimary
 import com.example.ui.theme.DarkSecondary
 import androidx.compose.ui.platform.LocalContext
 import android.app.DatePickerDialog
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.BorderStroke
 import com.example.ui.viewmodel.CalculatorViewModel
 import com.example.util.MathEvaluator
 import java.util.*
@@ -548,12 +552,85 @@ fun TipDialogContent(viewModel: CalculatorViewModel) {
 
 @Composable
 fun EquationDialogContent(viewModel: CalculatorViewModel) {
-    val a by viewModel.eqA.collectAsState()
-    val b by viewModel.eqB.collectAsState()
-    val c by viewModel.eqC.collectAsState()
-    val result by viewModel.eqResult.collectAsState()
+    var selectedSolverType by remember { mutableStateOf(0) } // 0 = Quadratic, 1 = AI Any Equation Solver
+    var isAiSolverUnlocked by rememberSaveable { mutableStateOf(false) }
+    var showAdDialog by remember { mutableStateOf(false) }
+    var adCountdown by remember { mutableStateOf(5) }
 
     val scroll = rememberScrollState()
+
+    if (showAdDialog) {
+        Dialog(
+            onDismissRequest = { 
+                if (adCountdown <= 0) {
+                    showAdDialog = false
+                }
+            },
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        ) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "SPONSOR ADVERTISING",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    // Display the Adsterra ad
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(130.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AdsterraAdView()
+                    }
+
+                    // Countdown timer ticks down
+                    LaunchedEffect(showAdDialog) {
+                        while (adCountdown > 0) {
+                            kotlinx.coroutines.delay(1000)
+                            adCountdown--
+                        }
+                    }
+
+                    if (adCountdown > 0) {
+                        Text(
+                            text = "Unlocking AI solver in $adCountdown seconds...",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Button(
+                            onClick = {
+                                isAiSolverUnlocked = true
+                                showAdDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Dismiss & Use AI Solver ✨")
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -561,58 +638,284 @@ fun EquationDialogContent(viewModel: CalculatorViewModel) {
             .verticalScroll(scroll),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(text = "Solves: a·x² + b·x + c = 0", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = a,
-                onValueChange = { viewModel.eqA.value = it; viewModel.solveEquations() },
-                label = { Text("a") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        // Toggle Switcher between Standard and AI general solver
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { selectedSolverType = 0 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (selectedSolverType == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = if (selectedSolverType == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                ),
                 modifier = Modifier.weight(1f)
-            )
+            ) {
+                Icon(Icons.Default.Functions, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("ax² + bx + c = 0", fontSize = 11.sp)
+            }
 
-            OutlinedTextField(
-                value = b,
-                onValueChange = { viewModel.eqB.value = it; viewModel.solveEquations() },
-                label = { Text("b") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f)
-            )
-
-            OutlinedTextField(
-                value = c,
-                onValueChange = { viewModel.eqC.value = it; viewModel.solveEquations() },
-                label = { Text("c") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f)
-            )
+            Button(
+                onClick = { selectedSolverType = 1 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (selectedSolverType == 1) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = if (selectedSolverType == 1) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier.weight(1.5f)
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("AI Any Solver ✨", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
         }
 
-        if (result.isNotEmpty()) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        if (selectedSolverType == 0) {
+            // Traditional Quadratic solver layout
+            val a by viewModel.eqA.collectAsState()
+            val b by viewModel.eqB.collectAsState()
+            val c by viewModel.eqC.collectAsState()
+            val result by viewModel.eqResult.collectAsState()
+
+            Text(text = "Solves: a·x² + b·x + c = 0", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = a,
+                    onValueChange = { viewModel.eqA.value = it; viewModel.solveEquations() },
+                    label = { Text("a") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+
+                OutlinedTextField(
+                    value = b,
+                    onValueChange = { viewModel.eqB.value = it; viewModel.solveEquations() },
+                    label = { Text("b") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+
+                OutlinedTextField(
+                    value = c,
+                    onValueChange = { viewModel.eqC.value = it; viewModel.solveEquations() },
+                    label = { Text("c") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (result.isNotEmpty()) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(text = "Calculated Roots", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = result,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        } else {
+            if (!isAiSolverUnlocked) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "Premium Mode",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = "Unlock AI Solver with Sponsor Ad",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Text(
+                            text = "AI Any Solver is a premium feature powered by Gemini AI that can solve any complex query or formula. Watch a quick 5-second sponsor ad to unlock it instantly!",
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                        )
+                        Button(
+                            onClick = { 
+                                showAdDialog = true
+                                adCountdown = 5
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Watch Sponsor Ad to Unlock ✨")
+                        }
+                    }
+                }
+            } else {
+                // General Equation Solver using Gemini API
+                val eqQuery by viewModel.eqGeneral.collectAsState()
+            val eqRoots by viewModel.eqGeneralRoots.collectAsState()
+            val eqExplanation by viewModel.eqGeneralExplanation.collectAsState()
+            val isSolving by viewModel.isSolvingGeneral.collectAsState()
+
+            Text(
+                text = "Type any mathematical equation, expression, or system of formulas:",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold
+            )
+
+            OutlinedTextField(
+                value = eqQuery,
+                onValueChange = { viewModel.eqGeneral.value = it },
+                label = { Text("Equation/Formula to Solve") },
+                placeholder = { Text("e.g. sin(x) = 0.5 or 3x + 15 = 0") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Button(
+                onClick = { viewModel.solveGeneralEquation() },
+                enabled = !isSolving && eqQuery.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Calculated Roots", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = result,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.primary
+                if (isSolving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Solving equation with Gemini AI...")
+                } else {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Solve with Gemini AI")
                 }
+            }
+
+            if (eqRoots.isNotEmpty()) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(text = "AI Calculated Solutions", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = eqRoots,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+
+            if (eqExplanation.isNotEmpty()) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = "Detailed Explanation Steps", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        val primaryColor = MaterialTheme.colorScheme.primary
+                        val annotatedExplanation = remember(eqExplanation, primaryColor) {
+                            androidx.compose.ui.text.buildAnnotatedString {
+                                val parts = eqExplanation.split("**")
+                                for (i in parts.indices) {
+                                    if (i % 2 == 1) {
+                                        pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = primaryColor))
+                                        append(parts[i])
+                                        pop()
+                                    } else {
+                                        append(parts[i])
+                                    }
+                                }
+                            }
+                        }
+                        Text(
+                            text = annotatedExplanation,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            }
             }
         }
     }
 }
 
+fun sanitizeFormulaForPlotting(input: String): String {
+    var formula = input.trim().replace("X", "x")
+    if (formula.startsWith("y=", ignoreCase = true)) {
+        formula = formula.substring(2)
+    } else if (formula.startsWith("f(x)=", ignoreCase = true)) {
+        formula = formula.substring(5)
+    } else if (formula.startsWith("f1(x)=", ignoreCase = true)) {
+        formula = formula.substring(6)
+    } else if (formula.startsWith("f2(x)=", ignoreCase = true)) {
+        formula = formula.substring(6)
+    }
+    
+    // Replace typical representation characters with MathEvaluator counterparts
+    formula = formula
+        .replace("sin⁻¹", "asin")
+        .replace("cos⁻¹", "acos")
+        .replace("tan⁻¹", "atan")
+        .replace("√", "sqrt")
+        .replace("∛", "cbrt")
+
+    // Insert implicit multiplication operators safely where omitted (e.g., 2x -> 2*x, x(x+1) -> x*(x+1))
+    var prev: String
+    do {
+        prev = formula
+        // Digit followed directly by a variable or symbol/opening parenthesis
+        formula = formula.replace(Regex("(\\d+)([a-zA-Z\\(])"), "$1*$2")
+        // Variable x followed by another function name start or opening parenthesis
+        formula = formula.replace(Regex("(x)([a-df-wyz\\(])"), "$1*$2")
+        // Closing parenthesis followed directly by a number or variable
+        formula = formula.replace(Regex("\\)([0-9x])"), ")*$1")
+    } while (formula != prev)
+
+    return formula
+}
+
 @Composable
 fun GraphDialogContent(viewModel: CalculatorViewModel) {
-    val expr by viewModel.graphEquation.collectAsState()
+    val expr1 by viewModel.graphEquation.collectAsState()
+    val expr2 by viewModel.graphEquation2.collectAsState()
+    val showSecond by viewModel.showSecondGraph.collectAsState()
+
+    val minX by viewModel.graphMinX.collectAsState()
+    val maxX by viewModel.graphMaxX.collectAsState()
+    val minY by viewModel.graphMinY.collectAsState()
+    val maxY by viewModel.graphMaxY.collectAsState()
 
     val scroll = rememberScrollState()
 
@@ -623,97 +926,205 @@ fun GraphDialogContent(viewModel: CalculatorViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OutlinedTextField(
-            value = expr,
-            onValueChange = { viewModel.graphEquation.value = it },
-            label = { Text("Function f(x) to plot") },
-            placeholder = { Text("e.g. sin(x) or cos(x) or x^2") },
-            singleLine = true,
+        // Equation Inputs with nice design headers
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             modifier = Modifier.fillMaxWidth()
-        )
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = expr1,
+                    onValueChange = { viewModel.graphEquation.value = it },
+                    label = { Text("Primary function f₁(x)") },
+                    placeholder = { Text("e.g. sin(x) or x^2-2x or x^3") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = DarkPrimary,
+                        unfocusedBorderColor = DarkPrimary.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-        // Custom Neon coordinate math Canvas grid drawing
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Add 2nd function comparison f₂(x)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Switch(
+                        checked = showSecond,
+                        onCheckedChange = { viewModel.showSecondGraph.value = it }
+                    )
+                }
+
+                if (showSecond) {
+                    OutlinedTextField(
+                        value = expr2,
+                        onValueChange = { viewModel.graphEquation2.value = it },
+                        label = { Text("Secondary function f₂(x)") },
+                        placeholder = { Text("e.g. cos(x) or x + 2") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = DarkSecondary,
+                            unfocusedBorderColor = DarkSecondary.copy(alpha = 0.5f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        // Beautiful pitch dark Canvas for high contrast Neon trace plots
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(280.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF0F111A)) // pitch dark background for beautiful neon plotting
+                .background(Color(0xFF0F111A))
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val width = size.width
                 val height = size.height
 
-                // Draw central coordinate axes grid (gray lines)
                 val gridColor = Color(0xFF23253B)
-                val axisColor = Color(0xFF4B5563)
+                val axisColor = Color(0xFF555A7E)
 
-                // Grid lines horizontal
+                // Render grid subdivisions (11 divisions)
                 for (i in 1..10) {
                     val y = height * (i / 11f)
                     drawLine(color = gridColor, start = Offset(0f, y), end = Offset(width, y), strokeWidth = 1f)
                 }
-                // Grid lines vertical
                 for (j in 1..10) {
                     val x = width * (j / 11f)
                     drawLine(color = gridColor, start = Offset(x, 0f), end = Offset(x, height), strokeWidth = 1f)
                 }
 
-                // Main Central Axes
-                drawLine(color = axisColor, start = Offset(0f, height / 2), end = Offset(width, height / 2), strokeWidth = 3f)
-                drawLine(color = axisColor, start = Offset(width / 2, 0f), end = Offset(width / 2, height), strokeWidth = 3f)
+                // Render coordinate axis lines if they fall within viewport boundaries
+                val drawAxisY = minX <= 0.0 && maxX >= 0.0
+                val drawAxisX = minY <= 0.0 && maxY >= 0.0
 
-                // Mathematically evaluate function from x = -10 to +10 and plot points
-                val path = Path()
-                val scaleX = 25f // pixels per unit
-                val scaleY = 25f
-
-                val centerX = width / 2
-                val centerY = height / 2
-
-                var firstPoint = true
-                val evaluator = MathEvaluator(isDegreeMode = false) // Radians for sleek wave plots!
-
-                // Loop across pixels to plot a smooth curve line
-                val step = 2
-                for (px in 0..width.toInt() step step) {
-                    val x = (px - centerX) / scaleX // convert pixel back to mathematical math units
-
-                    try {
-                        // Dynamically substitute 'x' into the formula
-                        // Since formula is like sin(x) or x^2, let's do a simple replacement parameter
-                        val substituted = expr
-                            .replace("x", "($x)")
-                        val yRes = evaluator.evaluate(substituted)
-
-                        // Convert y value to pixel offset
-                        val py = centerY - (yRes * scaleY)
-
-                        if (!yRes.isNaN() && !yRes.isInfinite() && py >= 0 && py <= height) {
-                            if (firstPoint) {
-                                path.moveTo(px.toFloat(), py.toFloat())
-                                firstPoint = false
-                            } else {
-                                path.lineTo(px.toFloat(), py.toFloat())
-                            }
-                        }
-                    } catch (_: Exception) {}
+                if (drawAxisY) {
+                    val x0 = (((0.0 - minX) / (maxX - minX)) * width).toFloat()
+                    drawLine(color = axisColor, start = Offset(x0, 0f), end = Offset(x0, height), strokeWidth = 3f)
+                }
+                if (drawAxisX) {
+                    val y0 = (height - (((0.0 - minY) / (maxY - minY)) * height)).toFloat()
+                    drawLine(color = axisColor, start = Offset(0f, y0), end = Offset(width, y0), strokeWidth = 3f)
                 }
 
-                // Draw neon curve path on coordinate canvas
-                drawPath(
-                    path = path,
-                    color = DarkPrimary, // neon Amber/orange color waveform
-                    style = Stroke(width = 5f)
-                )
+                val evaluator = MathEvaluator(isDegreeMode = false)
+
+                // Plot calculation helper
+                fun drawEquationPath(rawExpr: String, color: Color) {
+                    val path = Path()
+                    var firstPoint = true
+                    val step = (width / 200f).coerceAtLeast(1f).toInt() // fast resolution render step
+                    val sanitized = sanitizeFormulaForPlotting(rawExpr)
+
+                    for (px in 0..width.toInt() step step) {
+                        val x = minX + (px.toDouble() / width.toDouble()) * (maxX - minX)
+                        try {
+                            val substituted = sanitized.replace("x", "($x)")
+                            val yRes = evaluator.evaluate(substituted)
+
+                            // Math Y to screen height pixel map
+                            val py = (height - (((yRes - minY) / (maxY - minY)) * height)).toFloat()
+
+                            if (!yRes.isNaN() && !yRes.isInfinite() && py >= -100f && py <= height + 100f) {
+                                if (firstPoint) {
+                                        path.moveTo(px.toFloat(), py)
+                                        firstPoint = false
+                                } else {
+                                        path.lineTo(px.toFloat(), py)
+                                }
+                            }
+                        } catch (_: Exception) {}
+                    }
+
+                    drawPath(
+                        path = path,
+                        color = color,
+                        style = Stroke(width = 5f)
+                    )
+                }
+
+                // Plot primary curve trace (Amber-Orange trace)
+                if (expr1.isNotBlank()) {
+                     drawEquationPath(expr1, Color(0xFFFFA000))
+                }
+
+                // Plot comparison secondary curve trace if Switch is on (Cyan-Blue trace)
+                if (showSecond && expr2.isNotBlank()) {
+                     drawEquationPath(expr2, Color(0xFF00E5FF))
+                }
             }
         }
 
-        Text(
-            text = "Grid bounds: x [-6, +6], y [-5, +5]",
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // Navigation parameters readout and controller buttons card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = String.format(Locale.US, "Viewport: X [ %.1f to %.1f ] , Y [ %.1f to %.1f ]", minX, maxX, minY, maxY),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Zoom Out Icon Button
+                    IconButton(
+                        onClick = { viewModel.zoomGraph(1.5) },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(10.dp))
+                    ) {
+                        Icon(Icons.Default.Remove, contentDescription = "Zoom Out", tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
+
+                    // Layout 4-directional joystick d-pad controller
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(onClick = { viewModel.panGraph(0.0, 2.0) }) {
+                            Icon(Icons.Default.ArrowUpward, contentDescription = "Pan Up")
+                        }
+                        Row {
+                            IconButton(onClick = { viewModel.panGraph(-2.0, 0.0) }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Pan Left")
+                            }
+                            IconButton(onClick = { viewModel.resetGraphView() }) {
+                                Icon(Icons.Default.Refresh, contentDescription = "Reset View")
+                            }
+                            IconButton(onClick = { viewModel.panGraph(2.0, 0.0) }) {
+                                Icon(Icons.Default.ArrowForward, contentDescription = "Pan Right")
+                            }
+                        }
+                        IconButton(onClick = { viewModel.panGraph(0.0, -2.0) }) {
+                            Icon(Icons.Default.ArrowDownward, contentDescription = "Pan Down")
+                        }
+                    }
+
+                    // Zoom In Icon Button
+                    IconButton(
+                        onClick = { viewModel.zoomGraph(0.6) },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(10.dp))
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Zoom In", tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
+                }
+            }
+        }
     }
 }
 

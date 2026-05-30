@@ -58,10 +58,17 @@ fun ScientificCalculatorView(
 
     val clipboardManager = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     var showHistory by remember { mutableStateOf(false) }
     var filterFavoritesOnly by remember { mutableStateOf(false) }
     var scientificExpanded by remember { mutableStateOf(false) }
+
+    var loadAdsLazy by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1000) // Delay loading ads for 1.0s to ensure instant startup
+        loadAdsLazy = true
+    }
 
     val activeHistory = if (filterFavoritesOnly) favoriteList else historyList
 
@@ -173,6 +180,8 @@ fun ScientificCalculatorView(
                 }
             }
 
+
+
             // --- Mathematical LED Screen ---
             Box(
                 modifier = Modifier
@@ -237,6 +246,64 @@ fun ScientificCalculatorView(
                             }
                         }
                     }
+                }
+            }
+
+            // --- Sponsored Banner Ad (AdMob Native Banner) ---
+            if (loadAdsLazy) {
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "SPONSOR AD (AdMob)",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
+                        androidx.compose.ui.viewinterop.AndroidView(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            factory = { ctx ->
+                                com.google.android.gms.ads.AdView(ctx).apply {
+                                    setAdSize(com.google.android.gms.ads.AdSize.BANNER)
+                                    val isDebuggable = (ctx.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                                    val adUnitId = if (isDebuggable) {
+                                        "ca-app-pub-3940256099942544/6300978111" // Google's official Test Banner ID
+                                    } else {
+                                        "ca-app-pub-3767503288694165/7556332050" // Real production Banner ID
+                                    }
+                                    setAdUnitId(adUnitId)
+                                    loadAd(com.google.android.gms.ads.AdRequest.Builder().build())
+                                }
+                            },
+                            update = { /* no-op */ }
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .height(63.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp).align(Alignment.Center),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                    )
                 }
             }
 
@@ -307,8 +374,12 @@ fun ScientificCalculatorView(
                                     RoundedCornerShape(8.dp)
                                 )
                                 .clickable {
-                                    if (soundOn) { /* play */ }
-                                    if (vibeOn) { /* vibration */ }
+                                    if (soundOn) {
+                                        FeedbackUtil.playClickSound(context)
+                                    }
+                                    if (vibeOn) {
+                                        FeedbackUtil.playHapticVibe(context)
+                                    }
 
                                     when (mKey) {
                                         "MC" -> viewModel.onMemoryClear()
@@ -355,6 +426,8 @@ fun ScientificCalculatorView(
                                         backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
                                         textColor = MaterialTheme.colorScheme.secondary,
                                         fontSize = 13.sp,
+                                        soundEnabled = soundOn,
+                                        vibrationEnabled = vibeOn,
                                         onClick = {
                                             if (key == "()") {
                                                 viewModel.onParenthesisPress()
@@ -412,6 +485,8 @@ fun ScientificCalculatorView(
                                 backgroundBrush = backgroundBrush,
                                 textColor = textColor,
                                 fontSize = if (isOperator || isAction) 20.sp else 22.sp,
+                                soundEnabled = soundOn,
+                                vibrationEnabled = vibeOn,
                                 onClick = {
                                     when (key) {
                                         "AC" -> viewModel.onClear()
@@ -571,8 +646,11 @@ fun CalculatorButton(
     backgroundBrush: Brush? = null,
     textColor: Color,
     fontSize: androidx.compose.ui.unit.TextUnit = 20.sp,
+    soundEnabled: Boolean = false,
+    vibrationEnabled: Boolean = false,
     onClick: () -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Box(
         modifier = modifier
             .aspectRatio(1.2f) // beautiful rectangular grid shape
@@ -585,7 +663,15 @@ fun CalculatorButton(
                 }
             )
             .clickable(
-                onClick = onClick
+                onClick = {
+                    if (soundEnabled) {
+                        FeedbackUtil.playClickSound(context)
+                    }
+                    if (vibrationEnabled) {
+                        FeedbackUtil.playHapticVibe(context)
+                    }
+                    onClick()
+                }
             ),
         contentAlignment = Alignment.Center
     ) {

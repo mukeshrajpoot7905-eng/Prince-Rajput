@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.data.api.RetrofitClient
+import com.example.data.api.GeminiApi
 import com.example.data.entity.CurrencyRateEntity
 import com.example.data.entity.HistoryEntity
 import com.example.data.repository.CalculatorRepository
@@ -53,10 +54,10 @@ class CalculatorViewModel(private val repository: CalculatorRepository) : ViewMo
     val memoryValue: StateFlow<Double> = _memoryValue.asStateFlow()
 
     val calculationHistory: StateFlow<List<HistoryEntity>> = repository.allHistory
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val favoriteHistory: StateFlow<List<HistoryEntity>> = repository.favoriteHistory
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // --- Voice simulation state ---
     private val _isRecordingVoice = MutableStateFlow(false)
@@ -658,6 +659,11 @@ class CalculatorViewModel(private val repository: CalculatorRepository) : ViewMo
     val eqC = MutableStateFlow("6")
     val eqResult = MutableStateFlow("")
 
+    val eqGeneral = MutableStateFlow("3x + 12 = 0")
+    val eqGeneralRoots = MutableStateFlow("")
+    val eqGeneralExplanation = MutableStateFlow("")
+    val isSolvingGeneral = MutableStateFlow(false)
+
     fun solveEquations() {
         // We will solve ax^2 + bx + c = 0
         val a = eqA.value.toDoubleOrNull() ?: 0.0
@@ -691,8 +697,78 @@ class CalculatorViewModel(private val repository: CalculatorRepository) : ViewMo
         }
     }
 
+    fun solveGeneralEquation() {
+        val query = eqGeneral.value.trim()
+        if (query.isBlank()) return
+        isSolvingGeneral.value = true
+        viewModelScope.launch {
+            try {
+                val (roots, explanation) = GeminiApi.solveEquation(query)
+                eqGeneralRoots.value = roots
+                eqGeneralExplanation.value = explanation
+            } catch (e: Exception) {
+                eqGeneralRoots.value = "Failed to solve"
+                eqGeneralExplanation.value = "Error: ${e.localizedMessage ?: "Unknown error"}"
+            } finally {
+                isSolvingGeneral.value = false
+            }
+        }
+    }
+
     // 7. Graph Plotter state
-    val graphEquation = MutableStateFlow("sin(x)") // functions like sin(x), x^2, cos(x)
+    val graphEquation = MutableStateFlow("sin(x)") // primary function
+    val graphEquation2 = MutableStateFlow("cos(x)") // secondary function (optional)
+    val showSecondGraph = MutableStateFlow(false)   // toggle secondary curve
+
+    // Dynamic viewport bounds for Zoom and Pan
+    val graphMinX = MutableStateFlow(-10.0)
+    val graphMaxX = MutableStateFlow(10.0)
+    val graphMinY = MutableStateFlow(-10.0)
+    val graphMaxY = MutableStateFlow(10.0)
+
+    fun zoomGraph(factor: Double) {
+        val minX = graphMinX.value
+        val maxX = graphMaxX.value
+        val minY = graphMinY.value
+        val maxY = graphMaxY.value
+
+        val rangeX = maxX - minX
+        val rangeY = maxY - minY
+        val midX = (minX + maxX) / 2.0
+        val midY = (minY + maxY) / 2.0
+
+        val newHalfRangeX = (rangeX * factor) / 2.0
+        val newHalfRangeY = (rangeY * factor) / 2.0
+
+        // Clamp boundaries to reasonable ranges (avoid infinity or division by zero)
+        if (newHalfRangeX in 0.1..1000.0 && newHalfRangeY in 0.1..1000.0) {
+            graphMinX.value = midX - newHalfRangeX
+            graphMaxX.value = midX + newHalfRangeX
+            graphMinY.value = midY - newHalfRangeY
+            graphMaxY.value = midY + newHalfRangeY
+        }
+    }
+
+    fun panGraph(dx: Double, dy: Double) {
+        val rangeX = graphMaxX.value - graphMinX.value
+        val rangeY = graphMaxY.value - graphMinY.value
+
+        // Shift view relative to the screen dimensions
+        val shiftX = dx * (rangeX / 10.0)
+        val shiftY = dy * (rangeY / 10.0)
+
+        graphMinX.value += shiftX
+        graphMaxX.value += shiftX
+        graphMinY.value += shiftY
+        graphMaxY.value += shiftY
+    }
+
+    fun resetGraphView() {
+        graphMinX.value = -10.0
+        graphMaxX.value = 10.0
+        graphMinY.value = -10.0
+        graphMaxY.value = 10.0
+    }
 
     // Execute initial tools calculations
     init {
