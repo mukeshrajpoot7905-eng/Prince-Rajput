@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.DarkPrimary
 import com.example.ui.theme.DarkSecondary
+import androidx.compose.ui.platform.LocalContext
+import android.app.DatePickerDialog
 import com.example.ui.viewmodel.CalculatorViewModel
 import com.example.util.MathEvaluator
 import java.util.*
@@ -222,9 +224,15 @@ fun BMIDialogContent(viewModel: CalculatorViewModel) {
 
 @Composable
 fun AgeDialogContent(viewModel: CalculatorViewModel) {
+    val context = LocalContext.current
     val year by viewModel.birthYear.collectAsState()
     val month by viewModel.birthMonth.collectAsState()
     val day by viewModel.birthDay.collectAsState()
+
+    val yearStr by viewModel.birthYearStr.collectAsState()
+    val monthStr by viewModel.birthMonthStr.collectAsState()
+    val dayStr by viewModel.birthDayStr.collectAsState()
+
     val ageY by viewModel.ageYears.collectAsState()
     val ageM by viewModel.ageMonths.collectAsState()
     val ageD by viewModel.ageDays.collectAsState()
@@ -232,32 +240,55 @@ fun AgeDialogContent(viewModel: CalculatorViewModel) {
 
     val scroll = rememberScrollState()
 
+    // Show date picker dialog
+    val showDatePicker = {
+        DatePickerDialog(
+            context,
+            { _, selectedYear, selectedMonth, selectedDay ->
+                viewModel.setBirthdate(selectedYear, selectedMonth, selectedDay)
+            },
+            year,
+            month - 1,
+            day
+        ).show()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scroll),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Text("Birthdate Picker", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Button(
+            onClick = showDatePicker,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Icon(imageVector = Icons.Default.CalendarToday, contentDescription = "Calendar Picker")
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Select Date from Calendar")
+        }
+
+        Text("Or edit manually below:", fontWeight = FontWeight.Medium, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
-                value = day.toString(),
-                onValueChange = { it.toIntOrNull()?.let { d -> if (d in 1..31) viewModel.birthDay.value = d }; viewModel.calculateAge() },
+                value = dayStr,
+                onValueChange = { viewModel.setBirthDayStr(it) },
                 label = { Text("Day") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(1f)
             )
             OutlinedTextField(
-                value = month.toString(),
-                onValueChange = { it.toIntOrNull()?.let { m -> if (m in 1..12) viewModel.birthMonth.value = m }; viewModel.calculateAge() },
+                value = monthStr,
+                onValueChange = { viewModel.setBirthMonthStr(it) },
                 label = { Text("Month") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(1f)
             )
             OutlinedTextField(
-                value = year.toString(),
-                onValueChange = { it.toIntOrNull()?.let { y -> if (y in 1900..Calendar.getInstance().get(Calendar.YEAR)) viewModel.birthYear.value = y }; viewModel.calculateAge() },
+                value = yearStr,
+                onValueChange = { viewModel.setBirthYearStr(it) },
                 label = { Text("Year") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(1.5f)

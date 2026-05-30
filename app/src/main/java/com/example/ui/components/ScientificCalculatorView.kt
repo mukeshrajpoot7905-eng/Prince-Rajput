@@ -341,7 +341,7 @@ fun ScientificCalculatorView(
                             listOf("cos⁻¹", "tan⁻¹", "sinh", "cosh"),
                             listOf("tanh", "log", "ln", "√"),
                             listOf("∛", "!", "^", "mod"),
-                            listOf("π", "e", "RAND", "1/x")
+                            listOf("()", "π", "e", "1/x")
                         )
                         sciRows.forEach { row ->
                             Row(
@@ -356,7 +356,11 @@ fun ScientificCalculatorView(
                                         textColor = MaterialTheme.colorScheme.secondary,
                                         fontSize = 13.sp,
                                         onClick = {
-                                            viewModel.onScientificPress(key)
+                                            if (key == "()") {
+                                                viewModel.onParenthesisPress()
+                                            } else {
+                                                viewModel.onScientificPress(key)
+                                            }
                                         }
                                     )
                                 }
@@ -367,7 +371,7 @@ fun ScientificCalculatorView(
 
                 // Standard Keypad Row layouts
                 val keypadRows = listOf(
-                    listOf("AC", "()", "%", "÷"),
+                    listOf("AC", "⌫", "%", "÷"),
                     listOf("7", "8", "9", "×"),
                     listOf("4", "5", "6", "-"),
                     listOf("1", "2", "3", "+"),
@@ -381,7 +385,7 @@ fun ScientificCalculatorView(
                     ) {
                         row.forEach { key ->
                             val isOperator = key == "÷" || key == "×" || key == "-" || key == "+" || key == "="
-                            val isAction = key == "AC" || key == "()" || key == "%" || key == "+/-" || key == "⌫"
+                            val isAction = key == "AC" || key == "⌫" || key == "%" || key == "+/-"
 
                             val backgroundBrush = if (key == "=") {
                                 Brush.horizontalGradient(listOf(AccentGradientStart, AccentGradientEnd))
@@ -410,14 +414,8 @@ fun ScientificCalculatorView(
                                 fontSize = if (isOperator || isAction) 20.sp else 22.sp,
                                 onClick = {
                                     when (key) {
-                                        "AC" -> {
-                                            if (expr.isNotEmpty()) {
-                                                viewModel.onBackspace()
-                                            } else {
-                                                viewModel.onClear()
-                                            }
-                                        }
-                                        "()" -> viewModel.onParenthesisPress()
+                                        "AC" -> viewModel.onClear()
+                                        "⌫" -> viewModel.onBackspace()
                                         "%" -> viewModel.onScientificPress("%")
                                         "÷" -> viewModel.onOperatorPress("÷")
                                         "×" -> viewModel.onOperatorPress("×")

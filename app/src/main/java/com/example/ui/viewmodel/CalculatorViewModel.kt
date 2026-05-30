@@ -474,6 +474,53 @@ class CalculatorViewModel(private val repository: CalculatorRepository) : ViewMo
     val birthYear = MutableStateFlow(2000)
     val birthMonth = MutableStateFlow(1) // 1 to 12
     val birthDay = MutableStateFlow(1)
+
+    val birthYearStr = MutableStateFlow("2000")
+    val birthMonthStr = MutableStateFlow("1")
+    val birthDayStr = MutableStateFlow("1")
+
+    fun setBirthYearStr(value: String) {
+        birthYearStr.value = value
+        value.toIntOrNull()?.let {
+            if (it in 1900..Calendar.getInstance().get(Calendar.YEAR)) {
+                birthYear.value = it
+                calculateAge()
+            }
+        }
+    }
+
+    fun setBirthMonthStr(value: String) {
+        birthMonthStr.value = value
+        value.toIntOrNull()?.let {
+            if (it in 1..12) {
+                birthMonth.value = it
+                calculateAge()
+            }
+        }
+    }
+
+    fun setBirthDayStr(value: String) {
+        birthDayStr.value = value
+        value.toIntOrNull()?.let {
+            if (it in 1..31) {
+                birthDay.value = it
+                calculateAge()
+            }
+        }
+    }
+
+    fun setBirthdate(yearVal: Int, monthVal: Int, dayVal: Int) {
+        birthYear.value = yearVal
+        birthMonth.value = monthVal + 1
+        birthDay.value = dayVal
+
+        birthYearStr.value = yearVal.toString()
+        birthMonthStr.value = (monthVal + 1).toString()
+        birthDayStr.value = dayVal.toString()
+
+        calculateAge()
+    }
+
     val ageYears = MutableStateFlow("")
     val ageMonths = MutableStateFlow("")
     val ageDays = MutableStateFlow("")
