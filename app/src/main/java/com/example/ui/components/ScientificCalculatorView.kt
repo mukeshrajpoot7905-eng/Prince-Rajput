@@ -78,6 +78,64 @@ fun ScientificCalculatorView(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            // --- Sponsored Banner Ad (AdMob Native Banner) at the top ---
+            if (loadAdsLazy) {
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "SPONSOR AD (AdMob)",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
+                        androidx.compose.ui.viewinterop.AndroidView(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            factory = { ctx ->
+                                com.google.android.gms.ads.AdView(ctx).apply {
+                                    setAdSize(com.google.android.gms.ads.AdSize.BANNER)
+                                    val isDebuggable = (ctx.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                                    val adUnitId = if (isDebuggable) {
+                                        "ca-app-pub-3940256099942544/6300978111" // Google's official Test Banner ID
+                                    } else {
+                                        "ca-app-pub-3767503288694165/7556332050" // Real production Banner ID
+                                    }
+                                    setAdUnitId(adUnitId)
+                                    loadAd(com.google.android.gms.ads.AdRequest.Builder().build())
+                                }
+                            },
+                            update = { /* no-op */ }
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .height(63.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp).align(Alignment.Center),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                    )
+                }
+            }
+
             // --- Scientific indicators line ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -246,64 +304,6 @@ fun ScientificCalculatorView(
                             }
                         }
                     }
-                }
-            }
-
-            // --- Sponsored Banner Ad (AdMob Native Banner) ---
-            if (loadAdsLazy) {
-                Card(
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "SPONSOR AD (AdMob)",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.padding(bottom = 2.dp)
-                        )
-                        androidx.compose.ui.viewinterop.AndroidView(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            factory = { ctx ->
-                                com.google.android.gms.ads.AdView(ctx).apply {
-                                    setAdSize(com.google.android.gms.ads.AdSize.BANNER)
-                                    val isDebuggable = (ctx.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
-                                    val adUnitId = if (isDebuggable) {
-                                        "ca-app-pub-3940256099942544/6300978111" // Google's official Test Banner ID
-                                    } else {
-                                        "ca-app-pub-3767503288694165/7556332050" // Real production Banner ID
-                                    }
-                                    setAdUnitId(adUnitId)
-                                    loadAd(com.google.android.gms.ads.AdRequest.Builder().build())
-                                }
-                            },
-                            update = { /* no-op */ }
-                        )
-                    }
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .height(63.dp)
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp).align(Alignment.Center),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                    )
                 }
             }
 
